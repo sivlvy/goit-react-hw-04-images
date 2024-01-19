@@ -1,14 +1,12 @@
-import {  useEffect } from 'react';
+import { useEffect } from 'react';
 
 import { Overlay, Popup } from './Modal.styled';
 
-export const Modal = () => {
+export const Modal = ({ URL, alt, closeModal }) => {
 	useEffect(() => {
 		window.addEventListener('keydown', closeModal);
 		return () => window.removeEventListener('keydown', closeModal);
 	}, [closeModal]);
-
-	const { URL, alt, closeModal } = this.props;
 	return (
 		<Overlay id="overlay" onClick={closeModal}>
 			<Popup>

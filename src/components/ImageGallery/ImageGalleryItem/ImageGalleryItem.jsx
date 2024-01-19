@@ -1,4 +1,4 @@
-import { Component, useState } from 'react';
+import { useState } from 'react';
 import { Image, ImageItem } from './ImageGalleryItem.styled';
 import Modal from 'components/Modal/Modal';
 

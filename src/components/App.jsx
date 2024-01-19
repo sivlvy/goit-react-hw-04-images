@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useState, useEffect } from 'react';
 import * as API from '../Services/pixabay-api';
 import { Container } from './App.styled';
 import { Searchbar } from './SearchBar/SearchBar';
@@ -14,52 +14,51 @@ const STATUS = {
 	RESOLVED: 'resolved',
 };
 
-class App extends Component {
-	state = {
-		images: [],
-		values: '',
-		page: 1,
-		status: STATUS.IDLE,
-	};
-
-	async componentDidUpdate(_, prevState) {
-		const { images, values, page } = this.state;
-
-		if (prevState.page !== page || prevState.values !== values) {
-			await API.getImages(values, page)
-				.then(({ hits, totalHits }) => {
-					this.setState({
-						images: [...images, ...hits],
-						status:
-							Math.ceil(totalHits / 12) <= page ? STATUS.IDLE : STATUS.RESOLVED,
-					});
-				})
-				.catch(() => {
-					Notify.failure('Oops something went wrong! Try reloading page');
-					this.setState({ status: STATUS.REJECTED });
-				});
+export const App = () => {
+	const [images, setImages] = useState([]);
+	const [value, setValue] = useState('');
+	const [page, setPage] = useState(1);
+	const [status, setStatus] = useState(STATUS.IDLE);
+	useEffect(() => {
+		const fetchImages = async () => {
+			const { hits, totalHits } = await API.getImages(value, page);
+			try {
+				setImages(prevImages => [...prevImages, ...hits]);
+				setStatus(
+					Math.ceil(totalHits / 12) <= page ? STATUS.IDLE : STATUS.RESOLVED
+				);
+			} catch {
+				Notify.failure('Oops something went wrong! Try reloading page');
+				setStatus({ status: STATUS.REJECTED });
+			}
+		};
+		if (value) {
+			fetchImages();
 		}
-	}
-	updateValues = values => {
-		this.setState({ images: [], values, page: 1, status: STATUS.PENDING });
+	}, [value, page]);
+
+	const updateValues = newValue => {
+		if (newValue === value) {
+			Notify.info('You have to write new keyword... Try again!');
+			return;
+		}
+		setImages([]);
+		setValue(newValue);
+		setPage(1);
+		setStatus(STATUS.PENDING);
 	};
-	updatePage = () => {
-		this.setState(prevState => ({
-			page: prevState.page + 1,
-			status: STATUS.PENDING,
-		}));
+	const updatePage = () => {
+		setPage(prevPage => prevPage + 1);
+		setStatus(STATUS.PENDING);
 	};
-	render() {
-		const { updateValues, updatePage } = this;
-		const { images, status } = this.state;
-		return (
-			<Container>
-				<Searchbar onSubmit={updateValues} />
-				<ImageGallery images={images} />
-				{status === STATUS.RESOLVED && <Button handleClick={updatePage} />}
-				{status === STATUS.PENDING && <Loader />}
-			</Container>
-		);
-	}
-}
+	return (
+		<Container>
+			<Searchbar onSubmit={updateValues} />
+			<ImageGallery images={images} />
+			{status === STATUS.RESOLVED && <Button handleClick={updatePage} />}
+			{status === STATUS.PENDING && <Loader />}
+		</Container>
+	);
+};
+
 export default App;
